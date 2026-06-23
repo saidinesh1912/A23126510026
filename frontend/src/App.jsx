@@ -7,17 +7,20 @@ import {
   Card,
   CardContent,
   Chip,
-  Button,
   Select,
   MenuItem,
   CircularProgress,
   Box,
+  Button,
 } from "@mui/material";
 
 function App() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
+
+  const TOKEN =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJNYXBDbGFpbXMiOnsiYXVkIjoiaHR0cDovLzIwLjI0NC41Ni4xNDQvZXZhbHVhdGlvbi1zZXJ2aWNlIiwiZW1haWwiOiJnaWRpdHVyaWF2c3NhaWRpbmVzaC4yMy5jc2VAYW5pdHMuZWR1LmluIiwiZXhwIjoxNzgyMjAyNDIxLCJpYXQiOjE3ODIyMDE1MjEsImlzcyI6IkFmZm9yZCBNZWRpY2FsIFRlY2hub2xvZ2llcyBQcml2YXRlIExpbWl0ZWQiLCJqdGkiOiI5MDM5NzFkYy04ZTMwLTQwODgtYmIwNi1lMmM3MTBhZTM4OWMiLCJsb2NhbGUiOiJlbi1JTiIsIm5hbWUiOiJnIGEgdiBzIHNhaSBkaW5lc2giLCJzdWIiOiI1NTIyYmJhNC0wMzkyLTQxMmEtYTU4MS1jNWNiYTA3MjcwOTUifSwiZW1haWwiOiJnaWRpdHVyaWF2c3NhaWRpbmVzaC4yMy5jc2VAYW5pdHMuZWR1LmluIiwibmFtZSI6ImcgYSB2IHMgc2FpIGRpbmVzaCIsInJvbGxObyI6ImEyMzEyNjUxMDAyNiIsImFjY2Vzc0NvZGUiOiJNVHF4YXIiLCJjbGllbnRJRCI6IjU1MjJiYmE0LTAzOTItNDEyYS1hNTgxLWM1Y2JhMDcyNzA5NSIsImNsaWVudFNlY3JldCI6ImpjZ2pGUFBRd2RtVXZGQ2UifQ.NgbYqZHWY4MxlDxAVX-aNwl5M33YyfgPXLbBSYUCtyk";
 
   useEffect(() => {
     fetchNotifications();
@@ -28,8 +31,15 @@ function App() {
       setLoading(true);
 
       const response = await axios.get(
-        "http://localhost:3000/notifications"
+        "http://4.224.186.213/evaluation-service/notifications",
+        {
+          headers: {
+            Authorization: `Bearer ${TOKEN}`,
+          },
+        }
       );
+
+      console.log(response.data);
 
       setNotifications(
         response.data.notifications || []
@@ -41,50 +51,35 @@ function App() {
     }
   };
 
-  const markRead = async (id) => {
-    try {
-      await axios.patch(
-        `http://localhost:3000/notifications/${id}/read`
+  const markViewed = (id) => {
+    const viewed =
+      JSON.parse(
+        localStorage.getItem("viewed")
+      ) || [];
+
+    if (!viewed.includes(id)) {
+      viewed.push(id);
+
+      localStorage.setItem(
+        "viewed",
+        JSON.stringify(viewed)
       );
-
-      const viewed =
-        JSON.parse(
-          localStorage.getItem("viewed")
-        ) || [];
-
-      if (!viewed.includes(id)) {
-        viewed.push(id);
-
-        localStorage.setItem(
-          "viewed",
-          JSON.stringify(viewed)
-        );
-      }
-
-      fetchNotifications();
-    } catch (error) {
-      console.error(error);
     }
+
+    window.location.reload();
   };
 
-  const deleteNotification = async (id) => {
-    try {
-      await axios.delete(
-        `http://localhost:3000/notifications/${id}`
-      );
-
-      fetchNotifications();
-    } catch (error) {
-      console.error(error);
-    }
-  };
+  const viewed =
+    JSON.parse(
+      localStorage.getItem("viewed")
+    ) || [];
 
   const filteredNotifications =
     filter === ""
       ? notifications
       : notifications.filter(
           (notification) =>
-            notification.type === filter
+            notification.Type === filter
         );
 
   const weights = {
@@ -98,15 +93,10 @@ function App() {
   ]
     .sort(
       (a, b) =>
-        weights[b.type] -
-        weights[a.type]
+        (weights[b.Type] || 0) -
+        (weights[a.Type] || 0)
     )
     .slice(0, 10);
-
-  const viewed =
-    JSON.parse(
-      localStorage.getItem("viewed")
-    ) || [];
 
   if (loading) {
     return (
@@ -166,9 +156,7 @@ function App() {
       </Select>
 
       <Typography sx={{ mb: 2 }}>
-        Current Filter:
-        {" "}
-        {filter || "All"}
+        Current Filter: {filter || "All"}
       </Typography>
 
       <Typography
@@ -178,95 +166,65 @@ function App() {
         All Notifications
       </Typography>
 
-      {filteredNotifications.length === 0 ? (
-        <Typography>
-          No notifications found.
-        </Typography>
-      ) : (
-        filteredNotifications.map(
-          (notification) => (
-            <Card
-              key={notification.id}
-              sx={{ mb: 2 }}
-            >
-              <CardContent>
+      {filteredNotifications.map(
+        (notification) => (
+          <Card
+            key={notification.ID}
+            sx={{ mb: 2 }}
+          >
+            <CardContent>
 
-                <Chip
-                  label={
-                    notification.type
-                  }
-                  sx={{ mb: 1 }}
-                />
+              <Chip
+                label={
+                  notification.Type
+                }
+                sx={{ mb: 1 }}
+              />
 
-                <Typography
-                  variant="h6"
-                >
-                  {
-                    notification.message
-                  }
-                </Typography>
+              <Typography
+                variant="h6"
+              >
+                {
+                  notification.Message
+                }
+              </Typography>
 
-                <Typography>
-                  ID:
-                  {" "}
-                  {notification.id}
-                </Typography>
+              <Typography>
+                ID: {notification.ID}
+              </Typography>
 
-                <Typography>
-                  Timestamp:
-                  {" "}
-                  {notification.timestamp}
-                </Typography>
+              <Typography>
+                Timestamp:
+                {" "}
+                {
+                  notification.Timestamp
+                }
+              </Typography>
 
-                <Typography>
-                  Status:
-                  {" "}
-                  {notification.isRead
-                    ? "Read"
-                    : "Unread"}
-                </Typography>
+              <Typography>
+                Viewed:
+                {" "}
+                {viewed.includes(
+                  notification.ID
+                )
+                  ? "Yes"
+                  : "No"}
+              </Typography>
 
-                <Typography>
-                  Viewed:
-                  {" "}
-                  {viewed.includes(
-                    notification.id
+              <Button
+                variant="contained"
+                sx={{ mt: 2 }}
+                onClick={() =>
+                  markViewed(
+                    notification.ID
                   )
-                    ? "Yes"
-                    : "No"}
-                </Typography>
+                }
+              >
+                Mark Viewed
+              </Button>
 
-                <Button
-                  variant="contained"
-                  sx={{
-                    mt: 2,
-                    mr: 2,
-                  }}
-                  onClick={() =>
-                    markRead(
-                      notification.id
-                    )
-                  }
-                >
-                  Mark Read
-                </Button>
-
-                <Button
-                  variant="contained"
-                  color="error"
-                  sx={{ mt: 2 }}
-                  onClick={() =>
-                    deleteNotification(
-                      notification.id
-                    )
-                  }
-                >
-                  Delete
-                </Button>
-
-              </CardContent>
-            </Card>
-          )
+            </CardContent>
+          </Card>
         )
       )}
 
@@ -283,7 +241,7 @@ function App() {
       {priorityNotifications.map(
         (notification) => (
           <Card
-            key={`priority-${notification.id}`}
+            key={`priority-${notification.ID}`}
             sx={{ mb: 2 }}
           >
             <CardContent>
@@ -291,7 +249,7 @@ function App() {
               <Chip
                 color="primary"
                 label={
-                  notification.type
+                  notification.Type
                 }
                 sx={{ mb: 1 }}
               />
@@ -300,7 +258,7 @@ function App() {
                 variant="h6"
               >
                 {
-                  notification.message
+                  notification.Message
                 }
               </Typography>
 
@@ -309,8 +267,8 @@ function App() {
                 {" "}
                 {
                   weights[
-                    notification.type
-                  ]
+                    notification.Type
+                  ] || 0
                 }
               </Typography>
 
